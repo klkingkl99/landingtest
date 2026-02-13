@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Mini Game</title>
+
+  <!-- ✅ Meta Pixel Code (PASTE YOUR PIXEL ID) -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window, document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+
+  fbq('init', 'YOUR_PIXEL_ID_HERE');  // ✅ 把这里换成你的 Pixel ID
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=YOUR_PIXEL_ID_HERE&ev=PageView&noscript=1"
+  /></noscript>
+  <!-- ✅ End Meta Pixel Code -->
+
+  <style>
+    :root{
+      --text:#eef6ff;
+      --muted:rgba(238,246,255,.78);
+      --panel:rgba(12,18,32,.68);
+      --panel2:rgba(12,18,32,.86);
+      --line:rgba(255,255,255,.12);
+      --gold:#f2d18b;
+      --radius:18px;
+      --shadow:rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--text);
+      background:#050a14;
+      overflow-x:hidden;
+    }
+
+    /* ✅ 背景：GIF + 遮罩 */
+    .pageBg{
+      position:fixed; inset:-10px;
+      background:
+        radial-gradient(900px 420px at 50% 10%, rgba(255,255,255,.10), rgba(255,255,255,0) 60%),
+        linear-gradient(180deg, rgba(0,0,0,.55), rgba(0,0,0,.30) 35%, rgba(0,0,0,.72)),
+        url("./abgc44.gif") center/cover no-repeat;
+      filter:brightness(1.08) saturate(1.08);
+      transform:translate3d(0,0,0);
+      will-change:transform;
+      z-index:0;
+    }
+    .vignette{
+      position:fixed; inset:0;
+      background:radial-gradient(900px 650px at 50% 40%, rgba(0,0,0,0), rgba(0,0,0,.62) 78%);
+      pointer-events:none;
+      z-index:0;
+    }
+
+    .wrap{
+      position:relative; z-index:1;
+      max-width:520px;
+      margin:0 auto;
+      padding:16px 14px 28px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-height:100vh;
+    }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:10px 12px;
+      border-radius:var(--radius);
+      background:rgba(10,14,26,.62);
+      border:1px solid rgba(255,255,255,.10);
+      backdrop-filter:blur(12px);
+      box-shadow:0 10px 25px var(--shadow);
+    }
+
+    .brand{display:flex; gap:10px; align-items:center; font-weight:900}
+    .logo{
+      width:34px;height:34px;border-radius:12px;
+      background:radial-gradient(circle at 30% 30%, rgba(242,209,139,.95), rgba(242,209,139,.10));
+      border:1px solid rgba(242,209,139,.35);
+      box-shadow:0 10px 20px rgba(0,0,0,.25);
+    }
+    .menu{opacity:.9;font-size:14px;color:var(--muted)}
+
+    .card{
+      border-radius:var(--radius);
+      background:var(--panel);
+      border:1px solid rgba(255,255,255,.10);
+      backdrop-filter:blur(12px);
+      box-shadow:0 10px 25px var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .chat{padding:14px 14px 10px}
+    .bubble{
+      display:inline-block;
+      max-width:92%;
+      padding:10px 12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.10);
+      margin-bottom:10px;
+      line-height:1.35;
+      font-size:14.5px;
+    }
+    .bubble.me{
+      background:rgba(242,209,139,.12);
+      border:1px solid rgba(242,209,139,.22);
+    }
+
+    .game{padding:14px; display:flex; flex-direction:column; gap:12px;}
+    .headline{font-size:26px; font-weight:950; margin:6px 0 0}
+    .sub{margin:6px 0 0; color:var(--muted); font-size:14px; line-height:1.4}
+
+    .progress{
+      margin-top:10px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .bar{flex:1; height:8px; border-radius:999px; background:rgba(255,255,255,.12); overflow:hidden}
+    .bar > i{
+      display:block;
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, var(--gold), rgba(242,209,139,.25));
+      border-radius:999px;
+      transition:width .35s ease;
+    }
+
+    .choices{
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .choice{
+      padding:12px 10px;
+      border-radius:16px;
+      background:rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.12);
+      text-align:center;
+      cursor:pointer;
+      transition:transform .12s ease, border-color .12s ease, background .12s ease, box-shadow .12s ease, filter .12s ease, opacity .12s ease;
+      user-select:none;
+      position:relative;
+      overflow:hidden;
+    }
+    .choice:hover{
+      transform:translateY(-2px);
+      background:rgba(255,255,255,.06);
+      border-color:rgba(242,209,139,.28);
+      box-shadow:0 12px 26px rgba(0,0,0,.28);
+    }
+    .choice.selected{
+      border-color:rgba(242,209,139,.60);
+      background:rgba(242,209,139,.10);
+      box-shadow:0 16px 34px rgba(0,0,0,.32);
+    }
+    /* ✅ 选过后变暗 + 不能再选 */
+    .choice.used{
+      opacity:.38;
+      filter:saturate(.55) brightness(.75);
+      transform:none !important;
+      cursor:not-allowed;
+    }
+
+    .chest-icon{
+      width:54px;height:54px;
+      margin:0 auto 8px;
+      display:block;
+      object-fit:contain;
+      filter:drop-shadow(0 12px 18px rgba(0,0,0,.38));
+      transition:transform .18s ease;
+    }
+    .choice.selected .chest-icon{
+      transform:scale(1.06) rotate(-1.5deg);
+    }
+    .choice strong{display:block; font-size:13px; font-weight:900}
+    .choice span{display:block; margin-top:6px; font-size:12px; color:var(--muted)}
+
+    .cta{margin-top:10px; display:flex; gap:10px}
+    .btn{
+      width:100%;
+      padding:14px 14px;
+      border-radius:999px;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(0,0,0,.20);
+      color:var(--muted);
+      font-weight:900;
+      transition:transform .10s ease, filter .10s ease;
+    }
+    .btn:hover{transform:translateY(-1px)}
+    .btn.primary{
+      background:linear-gradient(135deg, rgba(242,209,139,.95), rgba(255,226,167,.78));
+      color:#111;
+      border:none;
+    }
+    .btn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      filter:saturate(.8);
+      transform:none !important;
+    }
+
+    .hint{
+      margin-top:8px;
+      font-size:12.5px;
+      color:rgba(238,246,255,.62);
+      line-height:1.35;
+    }
+
+    /* ✅ 弹窗 */
+    .modal{
+      position:fixed; inset:0;
+      z-index:9999;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      background:rgba(0,0,0,.55);
+      backdrop-filter:blur(8px);
+    }
+    .modal.show{display:flex}
+    .modalCard{
+      width:min(520px, 100%);
+      border-radius:22px;
+      background:rgba(10,14,26,.88);
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow:0 22px 60px rgba(0,0,0,.55);
+      overflow:hidden;
+      position:relative;
+    }
+    .modalTop{
+      padding:14px 14px 10px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .modalTitle{
+      font-weight:950;
+      font-size:16px;
+      line-height:1.2;
+    }
+    .modalClose{
+      border:none;
+      background:rgba(255,255,255,.10);
+      color:rgba(238,246,255,.85);
+      padding:8px 10px;
+      border-radius:12px;
+      cursor:pointer;
+    }
+    .modalBody{
+      padding:0 14px 14px;
+      color:var(--muted);
+      font-size:13.5px;
+      line-height:1.45;
+    }
+    .reward{
+      margin-top:10px;
+      padding:12px 12px;
+      border-radius:16px;
+      border:1px solid rgba(242,209,139,.22);
+      background:rgba(242,209,139,.10);
+      color:rgba(255,255,255,.92);
+      font-weight:900;
+      text-align:center;
+    }
+    .modalActions{
+      padding:12px 14px 14px;
+      display:flex;
+      gap:10px;
+    }
+
+    /* ✅ 小提示区 */
+    .faq{padding:14px}
+    .faqTitle{font-weight:950; margin-bottom:2px}
+    details{
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
+      border-radius:14px;
+      padding:10px 12px;
+      margin-top:10px;
+    }
+    summary{cursor:pointer; font-weight:900; list-style:none;}
+    details p{margin:8px 0 0; color:var(--muted); font-size:13.5px; line-height:1.45}
+
+    footer{
+      margin-top:auto;
+      padding:12px 6px 0;
+      color:rgba(238,246,255,.55);
+      font-size:12px;
+      text-align:center;
+    }
+
+    /* ✅ 浮动提示按钮（陀螺仪授权） */
+    .floatBtn{
+      position:fixed;
+      right:14px;
+      bottom:14px;
+      z-index:9998;
+      border-radius:999px;
+      padding:12px 14px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.35);
+      color:rgba(238,246,255,.82);
+      backdrop-filter:blur(10px);
+      cursor:pointer;
+      font-weight:900;
+      box-shadow:0 12px 28px rgba(0,0,0,.38);
+      display:none;
+    }
+    .floatBtn.show{display:block}
+
+    /* ✅ 小动效：轻微闪光 */
+    .shine::after{
+      content:"";
+      position:absolute;
+      top:-40%; left:-60%;
+      width:60%; height:180%;
+      transform:rotate(18deg);
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+      animation:shine 2.8s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes shine{
+      0%{transform:translateX(-20%) rotate(18deg); opacity:0}
+      35%{opacity:1}
+      60%{transform:translateX(220%) rotate(18deg); opacity:0}
+      100%{opacity:0}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="pageBg" id="pageBg" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <button class="floatBtn" id="gyroBtn" type="button">Aktifkan Gerakan</button>
+
+  <main class="wrap">
+    <div class="topbar">
+      <div class="brand"><div class="logo"></div><div>Mini Game</div></div>
+      <div class="menu">Menu ☰</div>
+    </div>
+
+    <section class="card chat">
+      <div class="bubble">Bossku… jom try sikit. Santai je 😄</div>
+      <div class="bubble me">Pilih satu chest, lepas tu tekan <b>Pilih</b>.</div>
+    </section>
+
+    <section class="card">
+      <div class="game">
+        <div>
+          <div class="headline">Pilih satu, cuba nasib</div>
+          <div class="sub">Setiap chest hanya boleh pilih <b>sekali</b>. 3 kali je — kali ke-3 baru terus masuk.</div>
+
+          <div class="progress">
+            <span id="stepText">Step 0/3</span>
+            <div class="bar"><i id="barFill"></i></div>
+          </div>
+          <div class="hint" id="hintText">Pilih chest dulu ya. Lepas tu tekan <b>Pilih</b>.</div>
+        </div>
+
+        <div class="choices" id="choices">
+          <div class="choice shine" data-chest="A">
+            <img class="chest-icon" src="./image-box.png" alt="Chest A">
+            <strong>Chest A</strong><span>Cuba sini</span>
+          </div>
+          <div class="choice" data-chest="B">
+            <img class="chest-icon" src="./image-box.png" alt="Chest B">
+            <strong>Chest B</strong><span>Cuba sini</span>
+          </div>
+          <div class="choice" data-chest="C">
+            <img class="chest-icon" src="./image-box.png" alt="Chest C">
+            <strong>Chest C</strong><span>Cuba sini</span>
+          </div>
+        </div>
+
+        <div class="cta">
+          <button class="btn" id="btnReset" type="button">Tengok Lagi</button>
+          <button class="btn primary" id="btnPilih" type="button" disabled>Pilih</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card faq">
+      <div class="faqTitle">Soalan biasa</div>
+      <details><summary>Ini game apa sebenarnya?</summary><p>Ini mini interaksi untuk test minat. Santai je — tekan, pilih, dan teruskan.</p></details>
+      <details><summary>Kenapa hanya 3 kali?</summary><p>Sebab kita nak buat flow senang & cepat. Kali ke-3 baru terus masuk.</p></details>
+      <details><summary>Data aku selamat?</summary><p>Kita cuma track klik/step asas (PageView, pilih chest, buka reward). Tak minta info peribadi dekat sini.</p></details>
+    </section>
+
+    <footer>Privacy · Terms · Contact</footer>
+  </main>
+
+  <!-- ✅ Modal -->
+  <div class="modal" id="modal">
+    <div class="modalCard">
+      <div class="modalTop">
+        <div>
+          <div class="modalTitle" id="modalTitle">Chest dibuka ✅</div>
+          <div style="margin-top:6px;color:rgba(238,246,255,.65);font-size:12.5px" id="modalSub">
+            Tekan “Pilih” bila dah ready.
+          </div>
+        </div>
+        <button class="modalClose" id="modalClose" type="button">Tutup</button>
+      </div>
+      <div class="modalBody">
+        <div>Hadiah untuk kali ini:</div>
+        <div class="reward" id="rewardText">Cuba Lagi</div>
+      </div>
+      <div class="modalActions">
+        <button class="btn" id="modalBack" type="button">Pilih Chest Lain</button>
+        <button class="btn primary" id="modalOk" type="button">Ok</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ✅ 最终跳转链接（第3次才跳）
+    const NEXT_URL = "https://abangcuci44.com/signup/?rf=017gz180";
+
+    // ✅ 固定顺序：第1次 Cuba Lagi，第2次 Free 3，第3次 Welcome New Member 100%
+    const REWARDS = ["Cuba Lagi", "Free 3", "Welcome New Member 100%"];
+
+    // ========= Pixel helper =========
+    function safeFbqTrackCustom(name, data){
+      try { if (window.fbq) fbq('trackCustom', name, data || {}); } catch(e){}
+    }
+    function safeFbqTrackStandard(name, data){
+      try { if (window.fbq) fbq('track', name, data || {}); } catch(e){}
+    }
+
+    // ========= UI refs =========
+    const pageBg = document.getElementById('pageBg');
+
+    const choicesWrap = document.getElementById('choices');
+    const btnPilih = document.getElementById('btnPilih');
+    const btnReset = document.getElementById('btnReset');
+
+    const stepText = document.getElementById('stepText');
+    const barFill  = document.getElementById('barFill');
+    const hintText = document.getElementById('hintText');
+
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalSub = document.getElementById('modalSub');
+    const rewardText = document.getElementById('rewardText');
+    const modalClose = document.getElementById('modalClose');
+    const modalBack = document.getElementById('modalBack');
+    const modalOk = document.getElementById('modalOk');
+
+    const gyroBtn = document.getElementById('gyroBtn');
+
+    // ========= state =========
+    let picked = null;             // 当前选择的 chest
+    let usedChests = new Set();    // 已经用过的 chest
+    let pressCount = 0;            // 第几次开箱（1..3）
+
+    // ========= progress =========
+    function setProgress(n){
+      const c = Math.max(0, Math.min(3, n));
+      stepText.textContent = `Step ${c}/3`;
+      barFill.style.width = (c/3*100) + '%';
+    }
+    setProgress(0);
+
+    function openModal(){
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal(){
+      modal.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    // ========= chest select =========
+    function setPicked(el){
+      document.querySelectorAll('.choice').forEach(x=>x.classList.remove('selected'));
+      el.classList.add('selected');
+      picked = el.dataset.chest;
+      btnPilih.disabled = false;
+
+      safeFbqTrackCustom('Chest_Select', { chest: picked, used_count: usedChests.size, pressCount });
+      hintText.innerHTML = `Kau pilih <b>Chest ${picked}</b>. Sekarang tekan <b>Pilih</b>.`;
+    }
+
+    choicesWrap.addEventListener('click', (e)=>{
+      const box = e.target.closest('.choice');
+      if(!box) return;
+
+      const chest = box.dataset.chest;
+      if(usedChests.has(chest)){
+        // 已用过的不能再选
+        return;
+      }
+      setPicked(box);
+    });
+
+    // ========= main flow =========
+    function applyUsedState(chest){
+      const el = document.querySelector(`.choice[data-chest="${chest}"]`);
+      if(el){
+        el.classList.remove('selected');
+        el.classList.add('used');
+      }
+    }
+
+    function showRewardModal(){
+      const reward = REWARDS[Math.min(pressCount-1, REWARDS.length-1)];
+      modalTitle.textContent = `Chest ${picked} dibuka ✅`;
+      rewardText.textContent = reward;
+
+      if(pressCount === 1){
+        modalSub.textContent = "Ini kali pertama. Cuba lagi ya 😄";
+      }else if(pressCount === 2){
+        modalSub.textContent = "Ok… next lagi satu. Lepas tu terus masuk 😉";
+      }else{
+        modalSub.textContent = "Kali ke-3! Lepas tekan Ok, terus masuk.";
+      }
+
+      safeFbqTrackCustom('Chest_OpenModal', { chest: picked, pressCount, reward });
+      openModal();
+    }
+
+    btnPilih.addEventListener('click', ()=>{
+      if(!picked){
+        alert("Pilih satu chest dulu ya 😄");
+        return;
+      }
+
+      pressCount += 1;
+      setProgress(pressCount);
+
+      // 记录按钮点击
+      safeFbqTrackCustom('Pilih_Confirm', { chest: picked, pressCount });
+
+      // 标记该 chest 已用过
+      usedChests.add(picked);
+      applyUsedState(picked);
+
+      // 清空当前选择（需要选新 chest 才能继续）
+      picked = null;
+      btnPilih.disabled = true;
+      hintText.innerHTML = `Ok ✅ Sekarang pilih chest lain. (Baki <b>${3-pressCount}</b> kali)`;
+
+      // 弹窗显示固定奖励
+      showRewardModal();
+
+      // 第3次才跳转（在 modalOk 里执行）
+    });
+
+    // ========= modal controls =========
+    modalClose.addEventListener('click', closeModal);
+    modalOk.addEventListener('click', ()=>{
+      closeModal();
+
+      if(pressCount >= 3){
+        // ✅ 标准事件（建议用于优化）
+        safeFbqTrackStandard('Lead');
+
+        safeFbqTrackCustom('Flow_Complete_3', { pressCount: 3 });
+        safeFbqTrackCustom('NextPage_Go', { to: NEXT_URL });
+
+        // 稍微等一下让 pixel 发出去
+        setTimeout(()=>{ window.location.href = NEXT_URL; }, 220);
+      }
+    });
+
+    modalBack.addEventListener('click', ()=>{
+      closeModal();
+    });
+
+    // ========= reset / info =========
+    btnReset.addEventListener('click', ()=>{
+      safeFbqTrackCustom('TengokLagi_Click', { pressCount, used_count: usedChests.size });
+      document.querySelector('.faq')?.scrollIntoView({ behavior:'smooth', block:'start' });
+    });
+
+    // ========= Parallax (desktop mouse) =========
+    let mx = 0, my = 0;
+    window.addEventListener('mousemove', (e)=>{
+      const w = window.innerWidth || 1;
+      const h = window.innerHeight || 1;
+      mx = (e.clientX / w - 0.5);
+      my = (e.clientY / h - 0.5);
+      // 轻微移动背景
+      pageBg.style.transform = `translate3d(${mx*10}px, ${my*10}px, 0) scale(1.03)`;
+    }, { passive:true });
+
+    // ========= Gyroscope (mobile) =========
+    let gyroOn = false;
+
+    function enableGyro(){
+      if(gyroOn) return;
+      gyroOn = true;
+
+      window.addEventListener('deviceorientation', (event)=>{
+        const gamma = event.gamma || 0; // left-right
+        const beta  = event.beta  || 0; // front-back
+
+        // 限制范围
+        const x = Math.max(-12, Math.min(12, gamma));
+        const y = Math.max(-12, Math.min(12, beta));
+
+        pageBg.style.transform = `translate3d(${x}px, ${y}px, 0) scale(1.04)`;
+      }, true);
+
+      safeFbqTrackCustom('Gyro_Enabled', { ok: true });
+      gyroBtn.textContent = "Gerakan Aktif ✅";
+      setTimeout(()=>gyroBtn.classList.remove('show'), 1200);
+    }
+
+    async function requestGyroPermission(){
+      try{
+        // iOS 需要用户授权
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+          const res = await DeviceOrientationEvent.requestPermission();
+          if(res === 'granted'){
+            enableGyro();
+          }else{
+            safeFbqTrackCustom('Gyro_Enabled', { ok:false, reason:'denied' });
+            gyroBtn.textContent = "Tak dibenarkan";
+          }
+        } else {
+          // Android 大多不需要授权
+          enableGyro();
+        }
+      }catch(err){
+        safeFbqTrackCustom('Gyro_Enabled', { ok:false, reason:'error' });
+        gyroBtn.textContent = "Tak supported";
+      }
+    }
+
+    // 手机上显示按钮（让用户点一下授权）
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if(isTouch){
+      gyroBtn.classList.add('show');
+      gyroBtn.addEventListener('click', requestGyroPermission);
+    }
+  </script>
+</body>
+</html>
